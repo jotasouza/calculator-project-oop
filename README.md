@@ -1,1 +1,1 @@
-# calculator-project-oop
+# Calculator Project OOP
