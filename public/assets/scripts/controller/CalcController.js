@@ -1,5 +1,8 @@
 class CalcController{
     constructor(){
+        this._lastOperator         = ''
+        this._lastNumber           = ''
+
         this._operation            = []
         this._locale               = 'pt-BR'
         this._timeElement          = document.querySelector('#hora')
@@ -50,6 +53,8 @@ class CalcController{
                 this.setDisplayDateTime()
                 
         }, 1000)
+
+        this.setLastNumberToDisplay()
     }
 
     addEventListenerAll(element, events, fn){
@@ -62,13 +67,18 @@ class CalcController{
     //método que limpa todas as operações
     clearAll(){
         this._operation = []
-        this.displayCalc(0)
+        this._lastNumber = ''
+        this._lastOperator = ''
+
+        this.setLastNumberToDisplay()
     }
 
     //método que limpa apenas a última entrada
     clearEntry(){
-        let clear = this.getLastOperation().toString().split(',').
-        console.log(clear)
+        
+        this._operation.pop()
+
+        this.setLastNumberToDisplay()
     }
 
     //método que retorna a ultima operação do array
@@ -99,29 +109,88 @@ class CalcController{
         }
     }
 
+    //método que retorna o eval da operação
+    getResult(){
+        return eval(this._operation.join(''))
+    }
+
     //metodo responsavel por realizar as operações
     calculate(){
 
-        let lastOperator = this._operation.pop()
+        let lastOperation = ''
 
-        let result = eval(this._operation.join(''))
+        this._lastOperator = this.getLastItem()
 
-        this._operation = [result, lastOperator]
+        if(this._operation.length < 3){
+            let firstItem = this._operation[0]
+            this._operation = [firstItem, this._lastOperator, this._lastNumber]
+        }
+
+        //verifica se o ultimo item do array é um número ou uma operação
+        //para tratar a excessão de pressionar mais de uma vez a tecla igual
+        if(this._operation.length > 3){
+            lastOperation = this._operation.pop()
+            
+            this._lastNumber = this.getResult()
+
+        }else if(this._operation.length === 3){
+
+            this._lastNumber = this.getLastItem(false)
+        }
+
+        let result = this.getResult()
+
+        if(lastOperation   === '%'){
+
+            result = result / 100
+
+            this._operation = [result]
+
+        }else{ 
+
+            this._operation = [result]
+
+            if(lastOperation){
+                this._operation.push(lastOperation)
+            }
+
+        }
 
         this.setLastNumberToDisplay()
 
     }
 
+    getLastItem(isOperator = true){
+
+        let lastItem;
+
+        for(let i = this._operation.length - 1; i >= 0; i--){
+
+            if(this.isOperator(this._operation[i]) == isOperator){
+                lastItem = this._operation[i]
+                break
+            }
+        }
+
+        if(!lastItem){
+
+            lastItem = (isOperator) ? this._lastOperator : this._lastNumber
+
+        }
+
+            return lastItem
+
+    }
+    
+    
     //método que mostra o ultimo numero no display
     setLastNumberToDisplay(){
 
-        let lastNumber;
+        let lastNumber = this.getLastItem(false);
 
-        for(let i = this._operation.length - 1; i >= 0; i--){
-            if(!this.isOperator(this._operation[i])){
-                lastNumber = this._operation[i]
-                break
-            }
+        if(!lastNumber){
+
+            lastNumber = 0
         }
 
         this.displayCalc = lastNumber
@@ -136,10 +205,6 @@ class CalcController{
 
                 this.setLastOperation(value)
                
-
-            }else if(isNaN(value)) {
-
-               console.log('Outra coisa', value)
 
             }else {
 
@@ -157,7 +222,7 @@ class CalcController{
             }else {
 
                 let newValue =  this.getLastOperation().toString() + value.toString()
-                this.setLastOperation(parseInt(newValue))
+                this.setLastOperation(newValue)
 
                 this.setLastNumberToDisplay()
 
@@ -172,6 +237,24 @@ class CalcController{
     //método que defini um erro no display, caso a operação não esteja prevista
     setError(){
         this.displayCalc = 'Error'
+    }
+
+    //método para tratar quando é inserido o ponto
+    //float
+    addDot(){
+        let lastOperation = this.getLastOperation()  
+
+        if(typeof lastOperation === 'string' && lastOperation.split('').indexOf('.') > -1){
+            return
+        }
+
+        if(this.isOperator(lastOperation) || !lastOperation){
+            this.pushOperator('0.')
+        }else{
+            this.setLastOperation(lastOperation.toString() + '.')
+        }
+
+        this.setLastNumberToDisplay()
     }
 
     //método que recebe o rotorno do botão e executa determinada função
@@ -207,11 +290,11 @@ class CalcController{
                 break
     
             case 'ponto':
-                this.addOperation('.')
+                this.addDot()
                 break    
 
             case 'igual':
-                //this.calculate()
+                this.calculate()
                 break
 
             case '0':
