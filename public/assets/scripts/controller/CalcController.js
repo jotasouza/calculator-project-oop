@@ -19,7 +19,14 @@ class CalcController{
     }
 
     set displayCalc(newValue){
+        
+        if(newValue.toString().length > 10){
+            this.setError()
+            return false
+        }
+            
         this._displayCalcElement.innerHTML =  newValue
+        
     }
 
     get currentDate(){
@@ -45,6 +52,9 @@ class CalcController{
     set displayDate(newValue){
         return this._dateElement.innerHTML = newValue
     }
+
+    //metodo ctrl+c
+    //copyToClipBoard(){}
     
     initialize(){
         this.setDisplayDateTime()
@@ -156,7 +166,16 @@ class CalcController{
 
     //método que retorna o eval da operação
     getResult(){
-        return eval(this._operation.join(''))
+
+        try{
+            return eval(this._operation.join(''))
+        }catch(e){
+            setTimeout(()=>{
+                this.setError()
+            }, 0.1)
+            
+        }
+        
     }
 
     //metodo responsavel por realizar as operações
@@ -276,7 +295,7 @@ class CalcController{
         }
         
        
-        console.log(this._operation)
+       // console.log(this._operation)
     }
 
     //método que defini um erro no display, caso a operação não esteja prevista
